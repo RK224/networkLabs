@@ -1,0 +1,13 @@
+So, now as you understand the programming with UDP sockets and the workingof our simple broken FTP applicationrunning over TCP socket, modify the above broken FTP client/server programs to make it run using UDP sockets.
+
+"Wheat crops have ripened, O farmer "BAISAKHI" has arrived!"
+Baisakhi is a historical and religious festival celebrated annually that marks the beginning of the Punjabi new year. It is additionally a spring harvest festival for the farmers of Punjab.
+So on this auspicious occasion,
+ PUNJABI CULTURAL ASSOCIATION
+cordially invites you to
+ " BAISAKHI CELEBRATION "
+  14th April | 7:30 PM
+  Venue - ROTUNDA
+A DJ night under the stars. You won't be able to stop yourself from grooving to the beats!
+ We request you to kindly grace the occasion with your benign presence.
+
