@@ -22,7 +22,7 @@ int main(void)
     struct sockaddr_in serv_addr;
 
     /* Create a socket first */
-    if((sockfd = socket(AF_INET, SOCK_STREAM, 0))< 0)
+    if((sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP))< 0)
     {
         printf("\n Error : Could not create socket \n");
         return 1;
@@ -34,12 +34,12 @@ int main(void)
     serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
     /* Attempt a connection */
-    if(connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr))<0)
+    /*if(connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr))<0)
     {
         printf("\n Error : Connect Failed \n");
         return 1;
-    }
-
+    }*/
+    // No connection needed in UDP , UDP is connectionless.
         
     /* Create file where data will be stored */
         FILE *fp;     
@@ -62,8 +62,11 @@ int main(void)
     printf("Enter (0) to get complete file, (1) to specify offset, (2) calculate the offset value from local file\n");
     scanf("%d", &command);
     sprintf(buff_command, "%d", command);
-    write(sockfd, buff_command, 2);
-    
+    //write(sockfd, buff_command, 2);
+    if(sendto(sockfd,buff_command,strlen(buff_command),0,(struct sockaddr*) &serv_addr,sizeof(serv_addr)) == -1 ){
+        printf("error sending command\n");
+        exit(1);
+    }
     
    
     if(command == 1 || command == 2)   // We need to specify the offset
@@ -77,15 +80,20 @@ int main(void)
         // otherwise offset = size of local partial file, that we have already calculated
         sprintf(buff_offset, "%d", offset);
         /* sending the value of file offset */
-        write(sockfd, buff_offset, 10);
+        if(sendto(sockfd,buff_offset,strlen(buff_offset),0,(struct sockaddr*) &serv_addr,sizeof(serv_addr)) == -1){
+            printf("error sending file offset\n");
+            exit(1);
+        }
     }
     
     // Else { command = 0 then no need to send the value of offset }
     
     
     /* Receive data in chunks of 256 bytes */
-    while((bytesReceived = read(sockfd, recvBuff, 256)) > 0)
+    int serverLen = sizeof(serv_addr);
+    while((bytesReceived = recvfrom(sockfd,recvBuff,256,0,(struct sockaddr*) &serv_addr,&serverLen)) > 0)
     {
+        fflush(stdout);
         printf("Bytes received %d\n",bytesReceived);    
         // recvBuff[n] = 0;
         fwrite(recvBuff, 1,bytesReceived,fp);
@@ -97,6 +105,7 @@ int main(void)
         printf("\n Read Error \n");
     }
 
-
+    fclose(fp);
+    close(sockfd);
     return 0;
 }

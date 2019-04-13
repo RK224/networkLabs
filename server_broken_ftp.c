@@ -11,12 +11,13 @@
 int main(void)
 {
     int listenfd = 0;
-    int connfd = 0;
-    struct sockaddr_in serv_addr;
+    //int connfd = 0;
+    struct sockaddr_in serv_addr,client_addr;
+    int clientLen = sizeof(client_addr);
     char sendBuff[1025];
     int numrv;
 
-    listenfd = socket(AF_INET, SOCK_STREAM, 0);
+    listenfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
     printf("Socket retrieve success\n");
 
@@ -29,33 +30,38 @@ int main(void)
 
     bind(listenfd, (struct sockaddr*)&serv_addr,sizeof(serv_addr));
 
-    if(listen(listenfd, 10) == -1)
+    /*if(listen(listenfd, 10) == -1)
     {
         printf("Failed to listen\n");
         return -1;
-    }
+    }*/
+    //No listen in udp
 
-
+    unsigned char offset_buffer[10] = "\0"; 
+    unsigned char command_buffer[2] = "\0"; 
     while(1)
     {
-        unsigned char offset_buffer[10] = {'\0'}; 
-        unsigned char command_buffer[2] = {'\0'}; 
-        int offset;
-        int command;
-        connfd = accept(listenfd, (struct sockaddr*)NULL ,NULL);
-        
+        memset(offset_buffer, 0, sizeof(offset_buffer));
+        memset(command_buffer, 0, sizeof(command_buffer));
+        int offset=-1;
+        int command=-1;
+        //connfd = accept(listenfd, (struct sockaddr*)NULL ,NULL);
+        //No connection to accept.
         
         printf("Waiting for client to send the command (Full File (0) Partial File (1)\n"); 
-        
-        while(read(connfd, command_buffer, 2) == 0);
-                sscanf(command_buffer, "%d", &command); 
-                
+
+
+       //make changes from here.
+       int a; 
+        while((a=recvfrom(listenfd,command_buffer,sizeof(command_buffer),0,(struct sockaddr*) &client_addr,&clientLen) ) == 0);
+        sscanf(command_buffer, "%d", &command); 
+        printf("recieved command %d form client %s\n", command,inet_ntoa(client_addr.sin_addr));      
         if(command == 0)
                 offset = 0;        
         else
         {
                 printf("Waiting for client to send the offset\n");  
-                while(read(connfd, offset_buffer, 10) == 0);
+                while(recvfrom(listenfd,offset_buffer,sizeof(offset_buffer),0,(struct sockaddr*) &client_addr,&clientLen) == 0);
                 sscanf(offset_buffer, "%d", &offset); 
         
         }
@@ -70,7 +76,7 @@ int main(void)
         }   
 
         /* Read data from file and send it */
-                 fseek(fp, offset, SEEK_SET);
+        fseek(fp, offset, SEEK_SET);
         while(1)
         {
             /* First read file in chunks of 256 bytes */
@@ -82,7 +88,7 @@ int main(void)
             if(nread > 0)
             {
                 printf("Sending \n");
-                write(connfd, buff, nread);
+                sendto(listenfd,buff,nread,0,(struct sockaddr*) &client_addr,clientLen);
             }
 
             /*
@@ -100,9 +106,9 @@ int main(void)
 
 
         }
-
-        close(connfd);
+        fclose(fp);
         sleep(1);
+        sendto(listenfd,NULL,0,0,(struct sockaddr*) &client_addr,clientLen);
     }
 
 
